@@ -1,7 +1,10 @@
 using Photon.Pun;
 using Photon.Realtime;
+using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 //[CreateRoom 설계도]
@@ -25,9 +28,18 @@ using UnityEngine;
 
 public class CreateRoom : MonoBehaviourPunCallbacks
 {
+    public static CreateRoom Instance;
+
+
     [SerializeField] PhotonLobbyManager manager;
-    [SerializeField] private string roomName = "Room1";
+    [SerializeField] private string roomName = "Room";
     [SerializeField] private TMP_Text roomInfoText;
+    private int count = 100;
+
+    private void Awake()
+    {
+        Instance = this;
+    }
 
     public void OnCreateRoom()
     {
@@ -36,16 +48,31 @@ public class CreateRoom : MonoBehaviourPunCallbacks
 
         RoomOptions roomOptions = new RoomOptions();
         roomOptions.MaxPlayers = 4;
+        roomOptions.IsOpen = true;
 
 
-        PhotonNetwork.CreateRoom(roomName, roomOptions);
+        PhotonNetwork.CreateRoom(roomName + $"{Random.Range(0, count)}", roomOptions);
     }
 
+    public void OnJoinRoom(string name)
+    {
+        if (PhotonNetwork.InRoom && !PhotonNetwork.InLobby)
+            return;
+
+        PhotonNetwork.JoinRoom(name);
+        
+    }
 
     public override void OnCreatedRoom()
     {
+        
         PhotonNetwork.JoinRoom(roomName);
         manager.SetStatus("InRoom");
+    }
+
+    public override void OnCreateRoomFailed(short returnCode, string message)
+    {
+        Debug.Log($"Code : {returnCode}" + message);
     }
 
     public override void OnJoinedRoom()
@@ -53,10 +80,20 @@ public class CreateRoom : MonoBehaviourPunCallbacks
         Debug.Log($"{PhotonNetwork.NickName}이 {roomName}에 입장하였습니다");
     }
 
+    public override void OnJoinRandomFailed(short returnCode, string message)
+    {
+        Debug.Log($"Code : {returnCode}" + message);
+    }
+
+    public override void OnJoinRoomFailed(short returnCode, string message)
+    {
+        Debug.Log($"Code : {returnCode}" + message);
+        PhotonNetwork.JoinRandomRoom();
+    }
 
     public override void OnLeftRoom()
     {
-        base.OnLeftRoom();
+        Debug.Log("룸에서 나가기");
     }
 
     public override void OnPlayerEnteredRoom(Player newPlayer)
@@ -81,6 +118,57 @@ public class CreateRoom : MonoBehaviourPunCallbacks
         else
         {
             roomInfoText.text = "Not Found Room";
+        }
+
+    }
+
+    [SerializeField] private GameObject root;
+    [SerializeField] private TMP_Text roomText;
+    [SerializeField] private GameObject prefabButton;
+    
+    Dictionary<string, RoomInfo> roomDic = new Dictionary<string, RoomInfo>();
+
+
+    public override void OnRoomListUpdate(List<RoomInfo> roomList)
+    {
+        RoomListView(roomList);
+        RefreshRoomButtons();
+    }
+    
+    public void RoomListView(List<RoomInfo> roomList)
+    {
+        foreach(RoomInfo room in roomList)
+        {
+            if (room.RemovedFromList)
+                roomDic.Remove(room.Name);
+            else
+                roomDic[room.Name] = room;
+        }
+    }
+
+    private void ClearRoomList()
+    {
+        roomDic.Clear();
+        RefreshRoomButtons();
+    }
+
+    public void RefreshRoomButtons()
+    {
+        foreach(Transform child in root.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        if (!PhotonNetwork.InLobby)
+            return;
+
+        foreach(RoomInfo info in roomDic.Values)
+        {
+            GameObject item = Instantiate(prefabButton, root.transform);
+            item.name = info.Name;
+            roomText = item.GetComponentInChildren<TMP_Text>();
+            roomText.text = $"{info.Name} ({info.PlayerCount}/{info.MaxPlayers})";
+            item.GetComponent<JoinRoom>().Setup(info, OnJoinRoom);
         }
 
     }
