@@ -1,7 +1,6 @@
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
-using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -239,6 +238,28 @@ public class PhotonLobbyManager : MonoBehaviourPunCallbacks
 
         Debug.Log("게임 시작");
         PhotonNetwork.CurrentRoom.IsOpen = false;
+    }
+
+    public override void OnMasterClientSwitched(Player newMasterClient)
+    {
+        Debug.Log($"뉴 방장 : {newMasterClient.NickName}");
+    }
+
+    public void OnClickTransferMaster()
+    {
+        if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient)
+            return;
+
+        foreach (Player p in PhotonNetwork.PlayerList)
+        {
+            if (!p.IsMasterClient)
+            {
+                PhotonNetwork.SetMasterClient(p);
+                return;
+            }
+                
+        }
+
     }
 
 
