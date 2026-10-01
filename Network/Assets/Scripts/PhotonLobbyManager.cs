@@ -4,6 +4,7 @@ using Photon.Realtime;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PhotonLobbyManager : MonoBehaviourPunCallbacks
@@ -27,18 +28,12 @@ public class PhotonLobbyManager : MonoBehaviourPunCallbacks
     private string nickName;
     private string gameVersion;
 
-    // 1. 만약 연결된 상황이면 아예 연결 버튼 못누르게(연결 끊기도
-    // 2. 접속 전 닉네임과 게임 버전 설정.
-    // 3. 로비 통계(로비에 몇 명, 방이 몇개 있는지)
-    // 4. 로비 나가기
-    // 5. 끊겼을 때 재접속
-
     void Start()
     {
         PhotonNetwork.AutomaticallySyncScene = true;
         //nickNameInputField.gameObject.SetActive(false);
-        nickNameInputField.onValueChanged.AddListener(OnChanged); // 글자 입력할 때마다
-        nickNameInputField.onEndEdit.AddListener(OnEndEdit);      // 엔터 또는 포커스 해제 시
+        //nickNameInputField.onValueChanged.AddListener(OnChanged); // 글자 입력할 때마다
+        //nickNameInputField.onEndEdit.AddListener(OnEndEdit);      // 엔터 또는 포커스 해제 시
 
         RefreshButton();
         SetGameVersion("1.0");
@@ -84,9 +79,7 @@ public class PhotonLobbyManager : MonoBehaviourPunCallbacks
             Debug.Log("연결 끊기");
             PhotonNetwork.Disconnect(); // 연결 끊는 중
         }
-            
 
-        
     }
 
     public override void OnConnectedToMaster()
@@ -196,6 +189,7 @@ public class PhotonLobbyManager : MonoBehaviourPunCallbacks
             text = sb.ToString();
             playerText.text = text;
         }
+        playerText.text = text;
     }
 
     [SerializeField] private Button readyButton;
@@ -206,6 +200,8 @@ public class PhotonLobbyManager : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.InRoom)
             return;
 
+
+        Debug.Log("준비!");
 
         bool ready = IsReady(PhotonNetwork.LocalPlayer);
 
@@ -238,11 +234,15 @@ public class PhotonLobbyManager : MonoBehaviourPunCallbacks
 
         Debug.Log("게임 시작");
         PhotonNetwork.CurrentRoom.IsOpen = false;
+        PhotonNetwork.LoadLevel("GameScene");
+        //SceneManager.LoadSceneAsync("GameScene", LoadSceneMode.Single);
+        //SceneManager.LoadScene("GameScene");
     }
 
     public override void OnMasterClientSwitched(Player newMasterClient)
     {
         Debug.Log($"뉴 방장 : {newMasterClient.NickName}");
+        RefreshPlayerList();
     }
 
     public void OnClickTransferMaster()
