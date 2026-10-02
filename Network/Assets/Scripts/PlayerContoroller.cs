@@ -1,13 +1,16 @@
 using UnityEngine;
 using Photon.Pun;
 
-public class PlayerContoroller : MonoBehaviourPun
+public class PlayerContoroller : MonoBehaviourPun, IPunObservable
 {
     [SerializeField] private float speed;
 
     [SerializeField] private Renderer render;
     private Animator anim;
     private bool isMove;
+
+    public int hp = 100;
+
     private void Start()
     {
         anim = GetComponent<Animator>();
@@ -58,6 +61,11 @@ public class PlayerContoroller : MonoBehaviourPun
             
         }
 
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            hp -= 10;
+        }
+
     }
 
     private void OnAttack()
@@ -78,5 +86,17 @@ public class PlayerContoroller : MonoBehaviourPun
         Debug.DrawRay(origin, direction * 10f, Color.red, 5f);
         anim.SetTrigger("Attack");
         Debug.Log($"{photonView.Owner.ActorNumber}플레이어 공격");
+    }
+
+    public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.IsReading) //특정 데이터의 값을 읽을 때
+        {
+            hp = (int)stream.ReceiveNext();
+        }
+        else if (stream.IsWriting) //특정 데이터를 보낼 때
+        {
+            stream.SendNext(hp);
+        }
     }
 }

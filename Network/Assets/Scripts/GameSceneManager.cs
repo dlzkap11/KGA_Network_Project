@@ -64,6 +64,9 @@ public class GameSceneManager : MonoBehaviourPunCallbacks
 
         spawnPos = spawnPoints[(actorNum - 1) % spawnPoints.Length].position;
         PhotonNetwork.Instantiate("Player", spawnPos, Quaternion.identity);
+
+        if(PhotonNetwork.IsMasterClient)
+            PhotonNetwork.Instantiate("Sphere", spawnPoints[2].position, Quaternion.identity);
     }
 
 }
